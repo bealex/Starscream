@@ -21,7 +21,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 import Foundation
-import CommonCrypto
 
 public enum FoundationSecurityError: Error {
     case invalidRequest
@@ -36,7 +35,7 @@ public class FoundationSecurity {
 }
 
 extension FoundationSecurity: CertificatePinning {
-    public func evaluateTrust(trust: SecTrust, domain: String?, completion: (PinningState) -> ()) {
+    public func evaluateTrust(trust: SecTrust, domain: String?, completion: (PinningState) -> Void) {
         if allowSelfSigned {
             completion(.success)
             return
@@ -83,17 +82,5 @@ extension FoundationSecurity: HeaderValidator {
             }
         }
         return nil
-    }
-}
-
-private extension String {
-    func sha1Base64() -> String {
-        let data = self.data(using: .utf8)!
-        let pointer = data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> [UInt8] in
-            var digest = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
-            CC_SHA1(bytes.baseAddress, CC_LONG(data.count), &digest)
-            return digest
-        }
-        return Data(pointer).base64EncodedString()
     }
 }
