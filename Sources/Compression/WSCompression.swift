@@ -26,6 +26,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if canImport(zlib)
+
 import Foundation
 import zlib
 
@@ -248,3 +250,5 @@ class Compressor {
         teardownDeflate()
     }
 }
+
+#endif
