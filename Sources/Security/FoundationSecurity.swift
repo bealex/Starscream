@@ -70,8 +70,8 @@ extension FoundationSecurity: CertificatePinning {
         if result == .unspecified || result == .proceed {
             completion(.success)
         } else {
-            let e = CFErrorCreate(kCFAllocatorDefault, "FoundationSecurityError" as NSString?, Int(result.rawValue), nil)
-            completion(.failed(e))
+            let error = CFErrorCreate(kCFAllocatorDefault, "FoundationSecurityError" as NSString?, Int(result.rawValue), nil)
+            completion(.failed(error))
         }
     }
 }

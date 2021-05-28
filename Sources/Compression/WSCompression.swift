@@ -29,6 +29,9 @@
 #if canImport(zlib)
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import zlib
 
 public class WSCompression: CompressionHandler {

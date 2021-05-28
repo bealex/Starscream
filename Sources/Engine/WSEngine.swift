@@ -7,9 +7,11 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
-public class WSEngine: Engine, TransportEventClient, FramerEventClient,
-FrameCollectorDelegate, HTTPHandlerDelegate {
+public class WSEngine: Engine, TransportEventClient, FramerEventClient, FrameCollectorDelegate, HTTPHandlerDelegate {
     private let transport: Transport
     private let framer: Framer
     private let httpHandler: HTTPHandler
