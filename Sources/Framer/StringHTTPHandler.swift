@@ -23,19 +23,17 @@
 import Foundation
 
 public class StringHTTPHandler: HTTPHandler {
-    
     var buffer = Data()
     weak var delegate: HTTPHandlerDelegate?
-    
+
     public init() {
-        
     }
-    
+
     public func convert(request: URLRequest) -> Data {
         guard let url = request.url else {
             return Data()
         }
-        
+
         var path = url.absoluteString
         let offset = (url.scheme?.count ?? 2) + 3
         path = String(path[path.index(path.startIndex, offsetBy: offset)..<path.endIndex])
@@ -47,7 +45,7 @@ public class StringHTTPHandler: HTTPHandler {
                 path += "?" + query
             }
         }
-        
+
         var httpBody = "\(request.httpMethod ?? "GET") \(path) HTTP/1.1\r\n"
         if let headers = request.allHTTPHeaderFields {
             for (key, val) in headers {
@@ -55,18 +53,18 @@ public class StringHTTPHandler: HTTPHandler {
             }
         }
         httpBody += "\r\n"
-        
+
         guard var data = httpBody.data(using: .utf8) else {
             return Data()
         }
-        
+
         if let body = request.httpBody {
             data.append(body)
         }
-        
+
         return data
     }
-    
+
     public func parse(data: Data) -> Int {
         let offset = findEndOfHTTP(data: data)
         if offset > 0 {
@@ -79,7 +77,7 @@ public class StringHTTPHandler: HTTPHandler {
         }
         return offset
     }
-    
+
     //returns true when the buffer should be cleared
     func parseContent(data: Data) -> Bool {
         guard let str = String(data: data, encoding: .utf8) else {
@@ -108,20 +106,20 @@ public class StringHTTPHandler: HTTPHandler {
             }
             i += 1
         }
-        
+
         if code != HTTPWSHeader.switchProtocolCode {
             delegate?.didReceiveHTTP(event: .failure(HTTPUpgradeError.notAnUpgrade(code)))
             return true
         }
-        
+
         delegate?.didReceiveHTTP(event: .success(headers))
         return true
     }
-    
+
     public func register(delegate: HTTPHandlerDelegate) {
         self.delegate = delegate
     }
-    
+
     private func findEndOfHTTP(data: Data) -> Int {
         let endBytes = [UInt8(ascii: "\r"), UInt8(ascii: "\n"), UInt8(ascii: "\r"), UInt8(ascii: "\n")]
         var pointer = [UInt8]()
@@ -140,4 +138,3 @@ public class StringHTTPHandler: HTTPHandler {
         return -1
     }
 }
-

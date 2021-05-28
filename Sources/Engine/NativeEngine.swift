@@ -33,45 +33,44 @@ public class NativeEngine: NSObject, Engine, URLSessionDataDelegate, URLSessionW
         stop(closeCode: UInt16(URLSessionWebSocketTask.CloseCode.abnormalClosure.rawValue))
     }
 
-    public func write(string: String, completion: (() -> ())?) {
-        task?.send(.string(string), completionHandler: { (error) in
+    public func write(string: String, completion: (() -> Void)?) {
+        task?.send(.string(string)) { error in
             completion?()
-        })
+        }
     }
 
-    public func write(data: Data, opcode: FrameOpCode, completion: (() -> ())?) {
+    public func write(data: Data, opcode: FrameOpCode, completion: (() -> Void)?) {
         switch opcode {
-        case .binaryFrame:
-            task?.send(.data(data), completionHandler: { (error) in
-                completion?()
-            })
-        case .textFrame:
-            let text = String(data: data, encoding: .utf8)!
-            write(string: text, completion: completion)
-        case .ping:
-            task?.sendPing(pongReceiveHandler: { (error) in
-                completion?()
-            })
-        default:
-            break //unsupported
+            case .binaryFrame:
+                task?.send(.data(data)) { error in
+                    completion?()
+                }
+            case .textFrame:
+                let text = String(data: data, encoding: .utf8)!
+                write(string: text, completion: completion)
+            case .ping:
+                task?.sendPing { error in
+                    completion?()
+                }
+            default:
+                break // unsupported
         }
     }
 
     private func doRead() {
-        task?.receive { [weak self] (result) in
+        task?.receive { [weak self] result in
             switch result {
-            case .success(let message):
-                switch message {
-                case .string(let string):
-                    self?.broadcast(event: .text(string))
-                case .data(let data):
-                    self?.broadcast(event: .binary(data))
-                @unknown default:
-                    break
-                }
-                break
-            case .failure(let error):
-                self?.broadcast(event: .error(error))
+                case .success(let message):
+                    switch message {
+                        case .string(let string):
+                            self?.broadcast(event: .text(string))
+                        case .data(let data):
+                            self?.broadcast(event: .binary(data))
+                        @unknown default:
+                            break
+                    }
+                case .failure(let error):
+                    self?.broadcast(event: .error(error))
             }
             self?.doRead()
         }
@@ -80,17 +79,22 @@ public class NativeEngine: NSObject, Engine, URLSessionDataDelegate, URLSessionW
     private func broadcast(event: WebSocketEvent) {
         delegate?.didReceive(event: event)
     }
-    
+
     public func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        let p = `protocol` ?? ""
-        broadcast(event: .connected([HTTPWSHeader.protocolName: p]))
+        let `protocol` = `protocol` ?? ""
+        broadcast(event: .connected([HTTPWSHeader.protocolName: `protocol`]))
     }
-    
-    public func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        var r = ""
-        if let d = reason {
-            r = String(data: d, encoding: .utf8) ?? ""
+
+    public func urlSession(
+        _ session: URLSession,
+        webSocketTask: URLSessionWebSocketTask,
+        didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+        reason: Data?
+    ) {
+        var result = ""
+        if let data = reason {
+            result = String(data: data, encoding: .utf8) ?? ""
         }
-        broadcast(event: .disconnected(r, UInt16(closeCode.rawValue)))
+        broadcast(event: .disconnected(result, UInt16(closeCode.rawValue)))
     }
 }

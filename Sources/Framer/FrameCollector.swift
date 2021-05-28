@@ -22,7 +22,7 @@
 
 import Foundation
 
-public protocol FrameCollectorDelegate: class {
+public protocol FrameCollectorDelegate: AnyObject {
     func didForm(event: FrameCollector.Event)
     func decompress(data: Data, isFinal: Bool) -> Data?
 }
@@ -39,11 +39,11 @@ public class FrameCollector {
     weak var delegate: FrameCollectorDelegate?
     var buffer = Data()
     var frameCount = 0
-    var isText = false //was the first frame a text frame or a binary frame?
+    var isText = false // was the first frame a text frame or a binary frame?
     var needsDecompression = false
-    
+
     public func add(frame: Frame) {
-        //check single frame action and out of order frames
+        // check single frame action and out of order frames
         if frame.opcode == .connectionClose {
             var code = frame.closeCode
             var reason = "connection closed by server"
@@ -67,7 +67,8 @@ public class FrameCollector {
             return
         } else if frameCount > 0 && frame.opcode != .continueFrame {
             let errCode = CloseCode.protocolError.rawValue
-            delegate?.didForm(event: .error(WSError(type: .protocolError, message: "second and beyond of fragment message must be a continue frame", code: errCode)))
+            let message = "second and beyond of fragment message must be a continue frame"
+            delegate?.didForm(event: .error(WSError(type: .protocolError, message: message, code: errCode)))
             reset()
             return
         }
@@ -75,7 +76,7 @@ public class FrameCollector {
             isText = frame.opcode == .textFrame
             needsDecompression = frame.needsDecompression
         }
-        
+
         let payload: Data
         if needsDecompression {
             payload = delegate?.decompress(data: frame.payload, isFinal: frame.isFin) ?? frame.payload
@@ -99,7 +100,7 @@ public class FrameCollector {
             reset()
         }
     }
-    
+
     func reset() {
         buffer = Data()
         frameCount = 0

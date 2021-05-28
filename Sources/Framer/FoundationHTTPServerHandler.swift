@@ -26,21 +26,21 @@ public class FoundationHTTPServerHandler: HTTPServerHandler {
     var buffer = Data()
     weak var delegate: HTTPServerDelegate?
     let getVerb: NSString = "GET"
-    
+
     public func register(delegate: HTTPServerDelegate) {
         self.delegate = delegate
     }
-    
+
     public func createResponse(headers: [String: String]) -> Data {
         #if os(watchOS)
-        //TODO: build response header
+        // TODO: build response header
         return Data()
         #else
         let response = CFHTTPMessageCreateResponse(kCFAllocatorDefault, HTTPWSHeader.switchProtocolCode,
                                                    nil, kCFHTTPVersion1_1).takeRetainedValue()
-        
-        //TODO: add other values to make a proper response here...
-        //TODO: also sec key thing (Sec-WebSocket-Key)
+
+        // TODO: add other values to make a proper response here...
+        // TODO: also sec key thing (Sec-WebSocket-Key)
         for (key, value) in headers {
             CFHTTPMessageSetHeaderFieldValue(response, key as CFString, value as CFString)
         }
@@ -50,28 +50,28 @@ public class FoundationHTTPServerHandler: HTTPServerHandler {
         return cfData as Data
         #endif
     }
-    
+
     public func parse(data: Data) {
         buffer.append(data)
         if parseContent(data: buffer) {
             buffer = Data()
         }
     }
-    
-    //returns true when the buffer should be cleared
+
+    // returns true when the buffer should be cleared
     func parseContent(data: Data) -> Bool {
         var pointer = [UInt8]()
         data.withUnsafeBytes { pointer.append(contentsOf: $0) }
         #if os(watchOS)
-        //TODO: parse data
+        // TODO: parse data
         return false
         #else
         let response = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true).takeRetainedValue()
         if !CFHTTPMessageAppendBytes(response, pointer, data.count) {
-            return false //not enough data, wait for more
+            return false // not enough data, wait for more
         }
         if !CFHTTPMessageIsHeaderComplete(response) {
-            return false //not enough data, wait for more
+            return false // not enough data, wait for more
         }
         if let method = CFHTTPMessageCopyRequestMethod(response)?.takeRetainedValue() {
             if (method as NSString) != getVerb {
@@ -79,7 +79,7 @@ public class FoundationHTTPServerHandler: HTTPServerHandler {
                 return true
             }
         }
-        
+
         if let cfHeaders = CFHTTPMessageCopyAllHeaderFields(response) {
             let nsHeaders = cfHeaders.takeRetainedValue() as NSDictionary
             var headers = [String: String]()
@@ -91,7 +91,7 @@ public class FoundationHTTPServerHandler: HTTPServerHandler {
             delegate?.didReceive(event: .success(headers))
             return true
         }
-        
+
         delegate?.didReceive(event: .failure(HTTPUpgradeError.invalidData))
         return true
         #endif

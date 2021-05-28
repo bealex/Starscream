@@ -25,14 +25,12 @@ import Foundation
 public typealias FoundationHTTPHandler = StringHTTPHandler
 #else
 public class FoundationHTTPHandler: HTTPHandler {
-
     var buffer = Data()
     weak var delegate: HTTPHandlerDelegate?
-    
+
     public init() {
-        
     }
-    
+
     public func convert(request: URLRequest) -> Data {
         let msg = CFHTTPMessageCreateRequest(kCFAllocatorDefault, request.httpMethod! as CFString,
                                              request.url! as CFURL, kCFHTTPVersion1_1).takeRetainedValue()
@@ -49,7 +47,7 @@ public class FoundationHTTPHandler: HTTPHandler {
         }
         return data.takeRetainedValue() as Data
     }
-    
+
     public func parse(data: Data) -> Int {
         let offset = findEndOfHTTP(data: data)
         if offset > 0 {
@@ -62,26 +60,26 @@ public class FoundationHTTPHandler: HTTPHandler {
         }
         return offset
     }
-    
-    //returns true when the buffer should be cleared
+
+    // returns true when the buffer should be cleared
     func parseContent(data: Data) -> Bool {
         var pointer = [UInt8]()
         data.withUnsafeBytes { pointer.append(contentsOf: $0) }
 
         let response = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, false).takeRetainedValue()
         if !CFHTTPMessageAppendBytes(response, pointer, data.count) {
-            return false //not enough data, wait for more
+            return false // not enough data, wait for more
         }
         if !CFHTTPMessageIsHeaderComplete(response) {
-            return false //not enough data, wait for more
+            return false // not enough data, wait for more
         }
-        
+
         let code = CFHTTPMessageGetResponseStatusCode(response)
         if code != HTTPWSHeader.switchProtocolCode {
             delegate?.didReceiveHTTP(event: .failure(HTTPUpgradeError.notAnUpgrade(code)))
             return true
         }
-        
+
         if let cfHeaders = CFHTTPMessageCopyAllHeaderFields(response) {
             let nsHeaders = cfHeaders.takeRetainedValue() as NSDictionary
             var headers = [String: String]()
@@ -93,15 +91,15 @@ public class FoundationHTTPHandler: HTTPHandler {
             delegate?.didReceiveHTTP(event: .success(headers))
             return true
         }
-        
+
         delegate?.didReceiveHTTP(event: .failure(HTTPUpgradeError.invalidData))
         return true
     }
-    
+
     public func register(delegate: HTTPHandlerDelegate) {
         self.delegate = delegate
     }
-    
+
     private func findEndOfHTTP(data: Data) -> Int {
         let endBytes = [UInt8(ascii: "\r"), UInt8(ascii: "\n"), UInt8(ascii: "\r"), UInt8(ascii: "\n")]
         var pointer = [UInt8]()

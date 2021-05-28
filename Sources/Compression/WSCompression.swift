@@ -35,19 +35,19 @@ public class WSCompression: CompressionHandler {
     var compressor: Compressor?
     var decompressorTakeOver = false
     var compressorTakeOver = false
-    
+
     public init() {
-        
+
     }
-    
+
     public func load(headers: [String: String]) {
         guard let extensionHeader = headers[headerWSExtensionName] else { return }
         decompressorTakeOver = false
         compressorTakeOver = false
-        
+
         let parts = extensionHeader.components(separatedBy: ";")
-        for p in parts {
-            let part = p.trimmingCharacters(in: .whitespaces)
+        for part in parts {
+            let part = part.trimmingCharacters(in: .whitespaces)
             if part.hasPrefix("server_max_window_bits=") {
                 let valString = part.components(separatedBy: "=")[1]
                 if let val = Int(valString.trimmingCharacters(in: .whitespaces)) {
@@ -65,9 +65,10 @@ public class WSCompression: CompressionHandler {
             }
         }
     }
-    
+
     public func decompress(data: Data, isFinal: Bool) -> Data? {
         guard let decompressor = decompressor else { return nil }
+
         do {
             let decompressedData = try decompressor.decompress(data, finish: isFinal)
             if decompressorTakeOver {
@@ -75,13 +76,14 @@ public class WSCompression: CompressionHandler {
             }
             return decompressedData
         } catch {
-            //do nothing with the error for now
+            // do nothing with the error for now
         }
         return nil
     }
-    
+
     public func compress(data: Data) -> Data? {
         guard let compressor = compressor else { return nil }
+
         do {
             let compressedData = try compressor.compress(data)
             if compressorTakeOver {
@@ -89,12 +91,10 @@ public class WSCompression: CompressionHandler {
             }
             return compressedData
         } catch {
-            //do nothing with the error for now
+            // do nothing with the error for now
         }
         return nil
     }
-    
-
 }
 
 class Decompressor {
@@ -105,13 +105,13 @@ class Decompressor {
 
     init?(windowBits: Int) {
         self.windowBits = windowBits
-        guard initInflate() else { return nil }
+        if !initInflate() {
+            return nil
+        }
     }
 
     private func initInflate() -> Bool {
-        if Z_OK == inflateInit2_(&strm, -CInt(windowBits),
-                                 ZLIB_VERSION, CInt(MemoryLayout<z_stream>.size))
-        {
+        if Z_OK == inflateInit2_(&strm, -CInt(windowBits), ZLIB_VERSION, CInt(MemoryLayout<z_stream>.size)) {
             inflateInitialized = true
             return true
         }
@@ -124,8 +124,8 @@ class Decompressor {
     }
 
     func decompress(_ data: Data, finish: Bool) throws -> Data {
-        return try data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> Data in
-            return try decompress(bytes: bytes, count: data.count, finish: finish)
+        try data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> Data in
+            try decompress(bytes: bytes, count: data.count, finish: finish)
         }
     }
 
@@ -134,7 +134,7 @@ class Decompressor {
         try decompress(bytes: bytes, count: count, out: &decompressed)
 
         if finish {
-            let tail:[UInt8] = [0x00, 0x00, 0xFF, 0xFF]
+            let tail: [UInt8] = [0x00, 0x00, 0xFF, 0xFF]
             try decompress(bytes: tail, count: tail.count, out: &decompressed)
         }
 
@@ -147,7 +147,7 @@ class Decompressor {
         strm.avail_in = CUnsignedInt(count)
 
         repeat {
-            buffer.withUnsafeMutableBytes { (bufferPtr) in
+            buffer.withUnsafeMutableBytes { bufferPtr in
                 strm.next_out = bufferPtr.bindMemory(to: UInt8.self).baseAddress
                 strm.avail_out = CUnsignedInt(bufferPtr.count)
 
@@ -184,14 +184,17 @@ class Compressor {
 
     init?(windowBits: Int) {
         self.windowBits = windowBits
-        guard initDeflate() else { return nil }
+        if !initDeflate() {
+            return nil
+        }
     }
 
     private func initDeflate() -> Bool {
-        if Z_OK == deflateInit2_(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
-                                 -CInt(windowBits), 8, Z_DEFAULT_STRATEGY,
-                                 ZLIB_VERSION, CInt(MemoryLayout<z_stream>.size))
-        {
+        if Z_OK == deflateInit2_(
+            &strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+            -CInt(windowBits), 8, Z_DEFAULT_STRATEGY,
+            ZLIB_VERSION, CInt(MemoryLayout<z_stream>.size)
+        ) {
             deflateInitialized = true
             return true
         }
@@ -206,12 +209,12 @@ class Compressor {
     func compress(_ data: Data) throws -> Data {
         var compressed = Data()
         var res: CInt = 0
-        data.withUnsafeBytes { (ptr:UnsafePointer<UInt8>) -> Void in
+        data.withUnsafeBytes { (ptr: UnsafePointer<UInt8>) in
             strm.next_in = UnsafeMutablePointer<UInt8>(mutating: ptr)
             strm.avail_in = CUnsignedInt(data.count)
 
             repeat {
-                buffer.withUnsafeMutableBytes { (bufferPtr) in
+                buffer.withUnsafeMutableBytes { bufferPtr in
                     strm.next_out = bufferPtr.bindMemory(to: UInt8.self).baseAddress
                     strm.avail_out = CUnsignedInt(bufferPtr.count)
 
