@@ -24,13 +24,18 @@ import PackageDescription
 
 let package = Package(
     name: "Starscream",
-    platforms: [ .iOS(.v11), .macOS(.v11) ],
+    platforms: [ .iOS(.v13), .macOS(.v11) ],
     products: [
         .library(name: "Starscream", targets: ["Starscream"])
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "git@github.com:apple/swift-crypto.git", from: "1.1.6")
+    ],
     targets: [
-        .target(name: "Starscream", path: "Sources")
+        .target(name: "Starscream", dependencies: [
+            .product(name: "Crypto", package: "swift-crypto")
+        ], path: "Sources", exclude: [ "Info.plist" ]),
+        .testTarget(name: "StarscreamTests")
     ]
 )
 

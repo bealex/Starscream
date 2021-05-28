@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CryptoKit
+import Crypto
 
 extension String {
     func sha1Base64() -> String {
