@@ -63,6 +63,7 @@ public class NativeEngine: NSObject, Engine, URLSessionDataDelegate, URLSessionW
     private func doRead() {
         task?.receive { [weak self] result in
             switch result {
+<<<<<<< HEAD
                 case .success(let message):
                     switch message {
                         case .string(let string):
@@ -74,7 +75,21 @@ public class NativeEngine: NSObject, Engine, URLSessionDataDelegate, URLSessionW
                     }
                 case .failure(let error):
                     self?.broadcast(event: .error(error))
-                    return
+=======
+            case .success(let message):
+                switch message {
+                case .string(let string):
+                    self?.broadcast(event: .text(string))
+                case .data(let data):
+                    self?.broadcast(event: .binary(data))
+                @unknown default:
+                    break
+                }
+                break
+            case .failure(let error):
+                self?.broadcast(event: .error(error))
+                return
+>>>>>>> c68359159dcf0b5de9b536b9a959e9e435e968d3
             }
             self?.doRead()
         }

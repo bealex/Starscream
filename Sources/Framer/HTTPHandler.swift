@@ -26,7 +26,7 @@ import FoundationNetworking
 #endif
 
 public enum HTTPUpgradeError: Error {
-    case notAnUpgrade(Int)
+    case notAnUpgrade(Int, [String: String])
     case invalidData
 }
 
