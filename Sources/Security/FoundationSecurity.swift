@@ -59,18 +59,14 @@ extension FoundationSecurity: CertificatePinning {
                 completion(.failed(error))
             }
         } else {
-            handleOldSecurityTrust(trust: trust, completion: completion)
-        }
-    }
-
-    private func handleOldSecurityTrust(trust: SecTrust, completion: (PinningState) -> Void) {
-        var result: SecTrustResultType = .unspecified
-        SecTrustEvaluate(trust, &result)
-        if result == .unspecified || result == .proceed {
-            completion(.success)
-        } else {
-            let error = CFErrorCreate(kCFAllocatorDefault, "FoundationSecurityError" as NSString?, Int(result.rawValue), nil)
-            completion(.failed(error))
+            var result: SecTrustResultType = .unspecified
+            SecTrustEvaluate(trust, &result)
+            if result == .unspecified || result == .proceed {
+                completion(.success)
+            } else {
+                let error = CFErrorCreate(kCFAllocatorDefault, "FoundationSecurityError" as NSString?, Int(result.rawValue), nil)
+                completion(.failed(error))
+            }
         }
     }
 }
