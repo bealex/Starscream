@@ -21,6 +21,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 import Foundation
+import CommonCrypto
 import CryptoKit
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -75,9 +76,19 @@ extension FoundationSecurity: HeaderValidator {
     public func validate(headers: [String: String], key: String) -> Error? {
         if let acceptKey = headers[HTTPWSHeader.acceptName] {
             let data = "\(key)258EAFA5-E914-47DA-95CA-C5AB0DC85B11".data(using: .utf8)!
-            let sha = Data(Insecure.SHA1.hash(data: data)).base64EncodedString()
-            if sha != acceptKey {
-                return WSError(type: .securityError, message: "accept header doesn't match", code: SecurityErrorCode.acceptFailed.rawValue)
+
+            if #available(iOS 13, *) {
+                let sha = Data(Insecure.SHA1.hash(data: data)).base64EncodedString()
+                if sha != acceptKey {
+                    return WSError(type: .securityError, message: "accept header doesn't match", code: SecurityErrorCode.acceptFailed.rawValue)
+                }
+            } else {
+                var digest = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
+                data.withUnsafeBytes { _ = CC_SHA1($0, CC_LONG(data.count), &digest) }
+                let sha = Data(digest).base64EncodedString()
+                if sha != acceptKey {
+                    return WSError(type: .securityError, message: "accept header doesn't match", code: SecurityErrorCode.acceptFailed.rawValue)
+                }
             }
         }
         return nil
