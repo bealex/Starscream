@@ -29,13 +29,13 @@ let package = Package(
         .library(name: "Starscream", targets: ["Starscream"])
     ],
     dependencies: [
-        .package(url: "git@github.com:apple/swift-crypto.git", from: "2.1.0")
+//        .package(url: "git@github.com:apple/swift-crypto.git", from: "2.1.0")
     ],
     targets: [
         .target(
             name: "Starscream",
             dependencies: [
-                .product(name: "Crypto", package: "swift-crypto")
+//                .product(name: "Crypto", package: "swift-crypto")
             ],
             path: "Sources",
             exclude: [ "Info.plist" ]
