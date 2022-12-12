@@ -20,7 +20,6 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if canImport(Network)
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -158,6 +157,3 @@ public class TCPTransport: Transport {
         }
     }
 }
-#else
-typealias TCPTransport = FoundationTransport
-#endif

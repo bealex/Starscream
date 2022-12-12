@@ -129,10 +129,8 @@ open class WebSocket: WebSocketClient, EngineDelegate {
         let engine: Engine
         if #available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *), !useCustomEngine {
             engine = NativeEngine()
-        } else if #available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *) {
-            engine = WSEngine(transport: TCPTransport(), certPinner: certPinner, compressionHandler: compressionHandler)
         } else {
-            engine = WSEngine(transport: FoundationTransport(), certPinner: certPinner, compressionHandler: compressionHandler)
+            engine = WSEngine(transport: TCPTransport(), certPinner: certPinner, compressionHandler: compressionHandler)
         }
         self.init(request: request, engine: engine)
     }
